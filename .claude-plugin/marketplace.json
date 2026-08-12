@@ -1,0 +1,13 @@
+{
+  "name": "grok-plugin",
+  "owner": {
+    "name": "Danny Mac"
+  },
+  "plugins": [
+    {
+      "name": "grok",
+      "source": "./claude-plugin",
+      "description": "Use your Grok (SuperGrok / X Premium) subscription from Claude Code via grok-bridge"
+    }
+  ]
+}

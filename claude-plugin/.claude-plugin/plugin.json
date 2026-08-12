@@ -1,0 +1,8 @@
+{
+  "name": "grok",
+  "description": "Use your Grok (SuperGrok / X Premium) subscription from Claude Code: ask Grok questions, delegate tasks, and set up the grok-bridge proxy.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Danny Mac"
+  }
+}
