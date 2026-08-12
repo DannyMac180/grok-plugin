@@ -2,6 +2,8 @@
 
 Use your **Grok subscription** (SuperGrok or X Premium) inside **Claude Code** and **OpenAI Codex** — no metered xAI API key required.
 
+> **Go deeper:** I write [**Attention Heads**](https://attentionheads.substack.com/?utm_source=github&utm_medium=readme&utm_campaign=grok-plugin) — deep, evidence-backed writing on AI, cognition, and agentic engineering. The **Agentic Engineering Field Notes** series is where I publish practical advice on the craft of using AI. [Subscribe](https://attentionheads.substack.com/subscribe?utm_source=github&utm_medium=readme&utm_campaign=grok-plugin) to get new posts to your inbox.
+
 xAI ships a first-class OAuth device-code flow for coding agents (`auth.x.ai`). Neither Claude Code nor Codex lets a plugin swap in a third-party OAuth model provider directly, so grok-bridge does it with a small local proxy:
 
 ```
