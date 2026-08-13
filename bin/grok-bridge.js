@@ -2,18 +2,28 @@
 import { loadConfig } from '../src/config.js';
 import { deviceLogin, loadStoredTokens } from '../src/auth.js';
 import { startServer } from '../src/server.js';
-import { installCodex, installClaude, codexSnippet } from '../src/install.js';
+import {
+  installCodex,
+  installCodexProvider,
+  installClaude,
+  codexMcpSnippet,
+  codexProviderSnippet
+} from '../src/install.js';
 import { buildAuthHeaders } from '../src/upstream.js';
 
 const HELP = `grok-bridge — use your Grok (SuperGrok / X Premium) subscription in Claude Code and Codex
 
 Usage:
-  grok-bridge login              OAuth device-code login against auth.x.ai
-  grok-bridge serve [--port N]   Start the local translation proxy
-  grok-bridge status             Show auth + config status
-  grok-bridge install claude     Create the grok-claude launcher for Claude Code
-  grok-bridge install codex      Add a grok provider/profile to ~/.codex/config.toml
-  grok-bridge print codex        Print the Codex config snippet without writing it
+  grok-bridge login                    OAuth device-code login against auth.x.ai
+  grok-bridge mcp                      Run the stdio MCP server (grok_delegate & co.)
+  grok-bridge status                   Show auth + config status
+  grok-bridge install codex            Add the Grok MCP server to ~/.codex/config.toml
+
+Advanced (Grok as the main model):
+  grok-bridge serve [--port N]         Start the local translation proxy
+  grok-bridge install claude           Create the grok-claude launcher for Claude Code
+  grok-bridge install codex-provider   Add a grok model provider/profile to Codex
+  grok-bridge print codex              Print the Codex config snippets without writing
 
 Environment overrides:
   GROK_BRIDGE_PORT, GROK_BRIDGE_HOST, GROK_MODEL, GROK_SMALL_MODEL,
@@ -35,6 +45,12 @@ async function main() {
     case 'serve':
       startServer(config);
       break;
+
+    case 'mcp': {
+      const { startMcpServer } = await import('../src/mcp.js');
+      startMcpServer(config);
+      break;
+    }
 
     case 'status': {
       const tokens = loadStoredTokens();
@@ -62,15 +78,17 @@ async function main() {
 
     case 'install':
       if (arg === 'codex') installCodex(config);
+      else if (arg === 'codex-provider') installCodexProvider(config);
       else if (arg === 'claude' || arg === 'claude-code') installClaude(config);
       else {
-        console.error('Usage: grok-bridge install <claude|codex>');
+        console.error('Usage: grok-bridge install <codex|codex-provider|claude>');
         process.exit(1);
       }
       break;
 
     case 'print':
-      if (arg === 'codex') console.log(codexSnippet(config));
+      if (arg === 'codex')
+        console.log(codexMcpSnippet() + '\n' + codexProviderSnippet(config));
       else {
         console.error('Usage: grok-bridge print codex');
         process.exit(1);

@@ -94,8 +94,9 @@ export async function getAccessToken(config) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// RFC 8628 device authorization flow.
-export async function deviceLogin(config) {
+// RFC 8628 step 1: request a device code. Returns the authorization payload
+// (device_code, user_code, verification_uri[_complete], interval, expires_in).
+export async function startDeviceAuth(config) {
   const { status, json } = await postForm(
     config.authBase + config.deviceCodePath,
     { client_id: config.clientId, scope: config.scope }
@@ -109,30 +110,29 @@ export async function deviceLogin(config) {
         'Grok CLI (`grok login`) — grok-bridge reuses ~/.grok/auth.json automatically.'
     );
   }
+  return {
+    ...json,
+    verify_url: json.verification_uri_complete || json.verification_uri,
+    started_at: Date.now()
+  };
+}
 
-  const verifyUrl = json.verification_uri_complete || json.verification_uri;
-  console.log('\nTo authorize grok-bridge with your Grok subscription:');
-  console.log(`  1. Open:  ${verifyUrl}`);
-  if (!json.verification_uri_complete) {
-    console.log(`  2. Enter code:  ${json.user_code}`);
-  } else {
-    console.log(`     (code: ${json.user_code})`);
-  }
-  console.log('\nWaiting for authorization...');
-
-  let interval = (json.interval || 5) * 1000;
-  const deadline = Date.now() + (json.expires_in || 900) * 1000;
+// RFC 8628 step 2: poll the token endpoint until approved, denied, or
+// timeoutMs elapses. Returns saved tokens on success, null if still pending
+// at the timeout, and throws on a terminal error.
+export async function pollDeviceAuth(config, device, timeoutMs = Infinity) {
+  let interval = (device.interval || 5) * 1000;
+  const expiry = device.started_at + (device.expires_in || 900) * 1000;
+  const deadline = Math.min(expiry, Date.now() + timeoutMs);
   while (Date.now() < deadline) {
-    await sleep(interval);
+    await sleep(Math.min(interval, Math.max(0, deadline - Date.now())));
     const poll = await postForm(config.authBase + config.tokenPath, {
       grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-      device_code: json.device_code,
+      device_code: device.device_code,
       client_id: config.clientId
     });
     if (poll.status === 200 && poll.json.access_token) {
-      const saved = saveTokens(poll.json);
-      console.log('Logged in. Tokens saved to ~/.grok-bridge/auth.json');
-      return saved;
+      return saveTokens(poll.json);
     }
     const err = poll.json.error;
     if (err === 'authorization_pending') continue;
@@ -144,5 +144,22 @@ export async function deviceLogin(config) {
       `Authorization failed: ${poll.json.error_description || err || `HTTP ${poll.status}`}`
     );
   }
-  throw new Error('Device authorization timed out.');
+  if (Date.now() >= expiry) throw new Error('Device authorization timed out.');
+  return null;
+}
+
+// Interactive CLI login: start the flow, print instructions, block until done.
+export async function deviceLogin(config) {
+  const device = await startDeviceAuth(config);
+  console.log('\nTo authorize grok-bridge with your Grok subscription:');
+  console.log(`  1. Open:  ${device.verify_url}`);
+  if (!device.verification_uri_complete) {
+    console.log(`  2. Enter code:  ${device.user_code}`);
+  } else {
+    console.log(`     (code: ${device.user_code})`);
+  }
+  console.log('\nWaiting for authorization...');
+  const saved = await pollDeviceAuth(config, device);
+  console.log('Logged in. Tokens saved to ~/.grok-bridge/auth.json');
+  return saved;
 }

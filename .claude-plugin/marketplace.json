@@ -6,8 +6,8 @@
   "plugins": [
     {
       "name": "grok",
-      "source": "./claude-plugin",
-      "description": "Use your Grok (SuperGrok / X Premium) subscription from Claude Code via grok-bridge"
+      "source": "./",
+      "description": "Delegate tasks to Grok on your Grok subscription (SuperGrok / X Premium) from inside Claude Code"
     }
   ]
 }

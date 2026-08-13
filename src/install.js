@@ -4,10 +4,19 @@ import path from 'node:path';
 import { CONFIG_DIR, ensureConfigDir } from './config.js';
 
 const CODEX_CONFIG = path.join(os.homedir(), '.codex', 'config.toml');
-const MARKER = '# --- added by grok-bridge ---';
+const MCP_MARKER = '# --- grok-bridge mcp (primary) ---';
+const PROVIDER_MARKER = '# --- grok-bridge provider (advanced) ---';
 
-export function codexSnippet(config) {
-  return `${MARKER}
+export function codexMcpSnippet() {
+  return `${MCP_MARKER}
+[mcp_servers.grok]
+command = "grok-bridge"
+args = ["mcp"]
+`;
+}
+
+export function codexProviderSnippet(config) {
+  return `${PROVIDER_MARKER}
 [model_providers.grok]
 name = "Grok (subscription via grok-bridge)"
 base_url = "http://${config.host}:${config.port}/openai/v1"
@@ -20,22 +29,48 @@ model = "${config.defaultModel}"
 `;
 }
 
-export function installCodex(config) {
-  const snippet = codexSnippet(config);
+function appendToCodexConfig(snippet, marker, label) {
   fs.mkdirSync(path.dirname(CODEX_CONFIG), { recursive: true });
   const existing = fs.existsSync(CODEX_CONFIG)
     ? fs.readFileSync(CODEX_CONFIG, 'utf8')
     : '';
-  if (existing.includes(MARKER)) {
-    console.log('Codex config already contains a grok-bridge provider block; leaving it as-is.');
-  } else {
-    if (existing) {
-      fs.copyFileSync(CODEX_CONFIG, CODEX_CONFIG + '.bak');
-      console.log(`Backed up existing config to ${CODEX_CONFIG}.bak`);
-    }
-    fs.writeFileSync(CODEX_CONFIG, existing + (existing.endsWith('\n') || !existing ? '' : '\n') + '\n' + snippet);
-    console.log(`Added [model_providers.grok] + [profiles.grok] to ${CODEX_CONFIG}`);
+  if (existing.includes(marker)) {
+    console.log(`Codex config already contains the ${label} block; leaving it as-is.`);
+    return;
   }
+  if (existing) {
+    fs.copyFileSync(CODEX_CONFIG, CODEX_CONFIG + '.bak');
+    console.log(`Backed up existing config to ${CODEX_CONFIG}.bak`);
+  }
+  fs.writeFileSync(
+    CODEX_CONFIG,
+    existing + (existing.endsWith('\n') || !existing ? '' : '\n') + '\n' + snippet
+  );
+  console.log(`Added ${label} to ${CODEX_CONFIG}`);
+}
+
+// Primary path: register the Grok MCP server with Codex so the agent can
+// delegate to Grok (grok_delegate, grok_review, in-chat login).
+export function installCodex() {
+  appendToCodexConfig(codexMcpSnippet(), MCP_MARKER, '[mcp_servers.grok]');
+  console.log(`
+Next steps:
+  1. Start Codex normally: codex
+  2. Ask it to delegate something to Grok, e.g. "use grok_delegate to ..."
+     On first use it will show a login link for your Grok subscription
+     (or run \`grok-bridge login\` in a terminal ahead of time).
+
+Note: this requires grok-bridge on your PATH (npm install -g grok-bridge).
+`);
+}
+
+// Advanced path: Grok as the model driving Codex, via the translation proxy.
+export function installCodexProvider(config) {
+  appendToCodexConfig(
+    codexProviderSnippet(config),
+    PROVIDER_MARKER,
+    '[model_providers.grok] + [profiles.grok]'
+  );
   console.log(`
 Next steps:
   1. Start the bridge:        grok-bridge serve
