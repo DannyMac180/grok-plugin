@@ -31,7 +31,17 @@ You get:
 
 ## Install — Codex
 
-Codex has no plugin marketplace, but it speaks MCP. Install the CLI once, register the server:
+Codex supports the Agent Plugins v1 marketplace flow — add the repo as a marketplace and install:
+
+```sh
+codex plugin marketplace add DannyMac180/grok-plugin --ref main
+codex plugin add grok@grok-plugin
+```
+
+Then ask Codex to use `grok_delegate` / `grok_review` the same way (the bundled `grok-delegation` skill teaches it the workflow). First use shows the same in-chat login link. Update later with `codex plugin marketplace upgrade grok-plugin`.
+
+<details>
+<summary>Older Codex without plugin support? Register the MCP server manually.</summary>
 
 ```bash
 npm install -g grok-bridge     # or: git clone https://github.com/DannyMac180/grok-plugin && cd grok-plugin && npm install -g .
@@ -39,14 +49,14 @@ grok-bridge install codex      # adds [mcp_servers.grok] to ~/.codex/config.toml
 codex
 ```
 
-Then ask Codex to use `grok_delegate` / `grok_review` the same way. First use shows the same in-chat login link.
+</details>
 
 ## How it works
 
 ```
 Claude Code ──(bundled plugin MCP server)──┐
                                            ├── grok-bridge ── OAuth (auth.x.ai) ── Grok subscription upstream
-Codex ────────([mcp_servers.grok])─────────┘        │
+Codex ────────(marketplace plugin, mcp.json)──┘        │
                                             device-code login,
                                             auto token refresh
 ```
@@ -119,26 +129,33 @@ codex --profile grok
 
 ```bash
 npm test                            # both suites: proxy translation + MCP e2e (mock upstreams)
-node bin/grok-bridge.js mcp         # run the MCP server from the repo
-node bin/grok-bridge.js serve       # run the proxy from the repo
+node plugins/grok/bin/grok-bridge.js mcp         # run the MCP server from the repo
+node plugins/grok/bin/grok-bridge.js serve       # run the proxy from the repo
 ```
 
 Repo layout:
 
 ```
-.claude-plugin/                Claude Code plugin + marketplace manifests
-commands/                      /grok:delegate, /grok:grok-setup
-agents/                        grok-reviewer agent
-bin/grok-bridge.js             CLI entrypoint
-src/mcp.js                     MCP server (grok_delegate, grok_review, in-chat login)
-src/auth.js                    device-code OAuth, token store, refresh
-src/upstream.js                Grok upstream client, model mapping, SSE parser
-src/config.js                  defaults + env/file overrides
-src/server.js                  HTTP proxy routing (advanced mode)
-src/translate-anthropic.js     Anthropic Messages ⇄ Chat Completions
-src/translate-responses.js     OpenAI Responses ⇄ Chat Completions
-src/install.js                 Codex MCP/provider installers, grok-claude launcher
-test/                          smoke tests for both modes
+.claude-plugin/marketplace.json        Claude Code marketplace manifest
+.agents/plugins/marketplace.json       Codex (Agent Plugins v1) marketplace manifest
+plugins/grok/                          the plugin itself, shared by both clients:
+  .claude-plugin/plugin.json             Claude Code manifest (bundles the MCP server)
+  .codex-plugin/plugin.json              Codex compatibility metadata
+  plugin.json                            canonical Agent Plugins v1 manifest
+  mcp.json                               stdio MCP registration (node bin/grok-bridge.js mcp)
+  commands/                              /grok:delegate, /grok:grok-setup (Claude Code)
+  agents/                                grok-reviewer agent (Claude Code)
+  skills/grok-delegation/                delegation workflow skill (Codex)
+  bin/grok-bridge.js                     CLI entrypoint
+  src/mcp.js                             MCP server (grok_delegate, grok_review, in-chat login)
+  src/auth.js                            device-code OAuth, token store, refresh
+  src/upstream.js                        Grok upstream client, model mapping, SSE parser
+  src/config.js                          defaults + env/file overrides
+  src/server.js                          HTTP proxy routing (advanced mode)
+  src/translate-anthropic.js             Anthropic Messages ⇄ Chat Completions
+  src/translate-responses.js             OpenAI Responses ⇄ Chat Completions
+  src/install.js                         Codex fallback installers, grok-claude launcher
+test/                                  smoke tests for both modes
 ```
 
 ## License

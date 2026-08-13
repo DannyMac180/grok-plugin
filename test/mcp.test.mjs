@@ -52,7 +52,7 @@ const mock = http.createServer((req, res) => {
 });
 await new Promise((r) => mock.listen(9927, '127.0.0.1', r));
 
-const child = spawn('node', [path.join(repoRoot, 'bin', 'grok-bridge.js'), 'mcp'], {
+const child = spawn('node', [path.join(repoRoot, 'plugins', 'grok', 'bin', 'grok-bridge.js'), 'mcp'], {
   env: {
     ...process.env,
     HOME,

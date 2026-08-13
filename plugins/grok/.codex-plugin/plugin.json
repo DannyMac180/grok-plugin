@@ -1,0 +1,35 @@
+{
+  "name": "grok",
+  "version": "0.3.0",
+  "description": "Delegate tasks to Grok on your Grok subscription (SuperGrok / X Premium) from inside Codex, with in-chat OAuth login via the bundled MCP server.",
+  "author": {
+    "name": "Daniel McAteer",
+    "url": "https://github.com/DannyMac180"
+  },
+  "homepage": "https://github.com/DannyMac180/grok-plugin#readme",
+  "repository": "https://github.com/DannyMac180/grok-plugin",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "grok",
+    "xai",
+    "delegation",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Grok",
+    "shortDescription": "Delegate any task to Grok on your Grok subscription — questions, research, code, cross-vendor review.",
+    "longDescription": "Grok becomes a delegate the parent agent can hand work to: questions, research, analysis, code to write or debug, and independent cross-vendor code review. Runs on the user's Grok subscription (SuperGrok or X Premium) via xAI's OAuth device flow — no metered API key. Login happens in the chat: on first use the agent relays a verification link, the user approves in a browser, and tokens refresh automatically. The parent agent keeps ownership of the workspace, verification, and acceptance; Grok returns finished work products as text.",
+    "developerName": "Daniel McAteer",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/DannyMac180/grok-plugin",
+    "defaultPrompt": [
+      "Use grok_delegate to hand this task to Grok and report its result with your own assessment.",
+      "Use grok_review to get an independent cross-vendor review of this diff, verify the findings against the code, and report what holds up."
+    ]
+  }
+}

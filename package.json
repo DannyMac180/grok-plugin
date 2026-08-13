@@ -1,16 +1,16 @@
 {
   "name": "grok-bridge",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Use your SuperGrok / X Premium subscription (Grok OAuth) inside Claude Code and OpenAI Codex via a local translation proxy",
   "type": "module",
   "bin": {
-    "grok-bridge": "bin/grok-bridge.js"
+    "grok-bridge": "plugins/grok/bin/grok-bridge.js"
   },
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start": "node bin/grok-bridge.js serve",
+    "start": "node plugins/grok/bin/grok-bridge.js serve",
     "test": "node test/smoke.test.mjs && node test/mcp.test.mjs"
   },
   "keywords": [

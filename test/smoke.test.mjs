@@ -65,8 +65,8 @@ await new Promise((r) => mock.listen(9917, '127.0.0.1', r));
 process.env.GROK_UPSTREAM_BASE = 'http://127.0.0.1:9917/v1';
 process.env.GROK_BRIDGE_PORT = '9918';
 
-const { startServer } = await import('../src/server.js');
-const { loadConfig } = await import('../src/config.js');
+const { startServer } = await import('../plugins/grok/src/server.js');
+const { loadConfig } = await import('../plugins/grok/src/config.js');
 const server = startServer(loadConfig());
 await new Promise((r) => setTimeout(r, 300));
 

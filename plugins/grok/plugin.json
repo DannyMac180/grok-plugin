@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "grok",
+  "version": "0.3.0",
+  "description": "Delegate tasks to Grok on your Grok subscription (SuperGrok / X Premium): questions, research, code review, second opinions — with in-chat OAuth login via the bundled MCP server.",
+  "author": {
+    "name": "Daniel McAteer",
+    "url": "https://github.com/DannyMac180"
+  },
+  "homepage": "https://github.com/DannyMac180/grok-plugin#readme",
+  "repository": "https://github.com/DannyMac180/grok-plugin",
+  "license": "MIT",
+  "keywords": [
+    "agent-plugin",
+    "grok",
+    "xai",
+    "delegation",
+    "mcp"
+  ]
+}

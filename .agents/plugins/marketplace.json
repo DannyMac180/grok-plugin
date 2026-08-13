@@ -1,0 +1,20 @@
+{
+  "name": "grok-plugin",
+  "interface": {
+    "displayName": "Grok"
+  },
+  "plugins": [
+    {
+      "name": "grok",
+      "source": {
+        "source": "local",
+        "path": "./plugins/grok"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
