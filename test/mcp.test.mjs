@@ -58,7 +58,8 @@ const child = spawn('node', [path.join(repoRoot, 'plugins', 'grok', 'bin', 'grok
     HOME,
     USERPROFILE: HOME,
     GROK_OAUTH_BASE: 'http://127.0.0.1:9927',
-    GROK_UPSTREAM_BASE: 'http://127.0.0.1:9927/v1'
+    GROK_UPSTREAM_BASE: 'http://127.0.0.1:9927/v1',
+    GROK_BRIDGE_NO_BROWSER: '1'
   },
   stdio: ['pipe', 'pipe', 'inherit']
 });
@@ -122,6 +123,12 @@ check(
 let r = await callTool('grok_delegate', { task: 'say hi' });
 check('unauthenticated delegate is error', r.isError);
 check('login URL surfaced in chat', r.text.includes('https://auth.example/activate') && r.text.includes('ABCD-1234'));
+check('agent told to relay URL in final message', r.text.includes('final user-visible message'));
+
+// grok_login also returns the URL + relay instruction.
+r = await callTool('grok_login');
+check('grok_login surfaces URL and relay instruction',
+  r.text.includes('https://auth.example/activate') && r.text.includes('final user-visible message'));
 
 // Still pending before the user approves.
 r = await callTool('grok_login_complete');

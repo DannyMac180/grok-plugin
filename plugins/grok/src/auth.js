@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { openBrowser } from './browser.js';
 import {
   AUTH_FILE,
   GROK_CLI_AUTH_FILE,
@@ -174,6 +175,9 @@ export async function deviceLogin(config) {
     console.log(`  2. Enter code:  ${device.user_code}`);
   } else {
     console.log(`     (code: ${device.user_code})`);
+  }
+  if (openBrowser(device.verify_url)) {
+    console.log('\nOpened the login page in your browser.');
   }
   console.log('\nWaiting for authorization...');
   const saved = await pollDeviceAuth(config, device);

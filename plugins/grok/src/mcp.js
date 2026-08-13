@@ -6,8 +6,9 @@ import readline from 'node:readline';
 import { loadConfig } from './config.js';
 import { loadStoredTokens, startDeviceAuth, pollDeviceAuth } from './auth.js';
 import { chatCompletions, mapModel, buildAuthHeaders } from './upstream.js';
+import { openBrowser } from './browser.js';
 
-const SERVER_INFO = { name: 'grok-bridge', version: '0.2.0' };
+const SERVER_INFO = { name: 'grok-bridge', version: '0.4.0' };
 
 const DELEGATE_SYSTEM_PROMPT =
   'You are Grok, acting as a delegate for another AI coding agent. ' +
@@ -77,8 +78,10 @@ const TOOLS = [
   {
     name: 'grok_login',
     description:
-      'Start the Grok OAuth device-code login. Returns a verification URL and code — ' +
-      'show them to the user, ask them to approve in a browser, then call grok_login_complete.',
+      'Start the Grok OAuth device-code login. Opens the login page in the user\'s ' +
+      'browser automatically and returns the verification URL and code — repeat them ' +
+      'in your final user-visible message, ask the user to approve, then call ' +
+      'grok_login_complete.',
     inputSchema: { type: 'object', properties: {} }
   },
   {
@@ -100,6 +103,26 @@ const text = (s, isError = false) => ({
   isError
 });
 
+// The login link must actually reach the human: auto-open their browser
+// (chat clients don't always render tool-call text), and tell the agent to
+// repeat the URL + code in its final user-visible message either way.
+function loginInstructions(device, preamble = '') {
+  const opened = openBrowser(device.verify_url);
+  return (
+    preamble +
+    (opened
+      ? 'The login page has been opened in the user\'s browser automatically.\n\n'
+      : '') +
+    'Login link and code:\n\n' +
+    `  ${device.verify_url}\n  code: ${device.user_code}\n\n` +
+    'IMPORTANT: repeat this URL and code verbatim in your final user-visible ' +
+    'message — text written between tool calls may never be shown to the user. ' +
+    'Ask the user to approve the login in their browser, then call ' +
+    'grok_login_complete. (Alternative: run `grok-bridge login` or the official ' +
+    'Grok CLI\'s `grok login` in a terminal.)'
+  );
+}
+
 export function startMcpServer(config = loadConfig()) {
   let pendingDevice = null;
 
@@ -111,11 +134,11 @@ export function startMcpServer(config = loadConfig()) {
     try {
       pendingDevice = await startDeviceAuth(config);
       return text(
-        'Grok is not authenticated yet. To connect the user\'s Grok subscription ' +
-          '(SuperGrok or X Premium), show the user this login link and ask them to ' +
-          `approve it in a browser:\n\n  ${pendingDevice.verify_url}\n  code: ${pendingDevice.user_code}\n\n` +
-          'Then call grok_login_complete to finish. (Alternative: run `grok-bridge login` ' +
-          'or the official Grok CLI\'s `grok login` in a terminal.)',
+        loginInstructions(
+          pendingDevice,
+          'Grok is not authenticated yet. To connect the user\'s Grok subscription ' +
+            '(SuperGrok or X Premium), the user must approve a device login.\n\n'
+        ),
         true
       );
     } catch (err) {
@@ -165,11 +188,7 @@ export function startMcpServer(config = loadConfig()) {
 
     async grok_login() {
       pendingDevice = await startDeviceAuth(config);
-      return text(
-        'Show the user this login link and ask them to approve it in a browser:\n\n' +
-          `  ${pendingDevice.verify_url}\n  code: ${pendingDevice.user_code}\n\n` +
-          'Then call grok_login_complete.'
-      );
+      return text(loginInstructions(pendingDevice));
     },
 
     async grok_login_complete() {

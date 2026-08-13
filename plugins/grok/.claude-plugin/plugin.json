@@ -1,7 +1,7 @@
 {
   "name": "grok",
   "description": "Delegate tasks to Grok on your Grok subscription (SuperGrok / X Premium): questions, research, code review, second opinions — via the bundled grok_delegate MCP tools.",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "author": {
     "name": "Danny Mac"
   },

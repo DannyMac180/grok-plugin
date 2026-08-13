@@ -6,7 +6,7 @@ Delegate tasks to **Grok** from inside **Claude Code** and **OpenAI Codex**, on 
 
 Your main agent stays whatever it is — Claude in Claude Code, GPT in Codex — and gains Grok as a delegate it can hand work to: questions, research, code to write or analyze, and independent cross-vendor code review. Models from different families have different blind spots; a second opinion from another lineage catches what same-family review misses.
 
-Under the hood this is an MCP server that authenticates against xAI's OAuth device flow and calls Grok on your subscription quota. Login happens **in the chat**: the first time the agent delegates to Grok, it shows you a verification link — approve it in your browser and you're connected. Tokens refresh automatically.
+Under the hood this is an MCP server that authenticates against xAI's OAuth device flow and calls Grok on your subscription quota. Login happens **in the chat**: the first time the agent delegates to Grok, the login page opens in your browser automatically (and the verification link + code also appear in the chat) — approve it and you're connected. Tokens refresh automatically. Set `GROK_BRIDGE_NO_BROWSER=1` to disable the auto-open on headless machines.
 
 ## Install — Claude Code
 

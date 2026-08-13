@@ -28,6 +28,7 @@ Advanced (Grok as the main model):
 Environment overrides:
   GROK_BRIDGE_PORT, GROK_BRIDGE_HOST, GROK_MODEL,
   GROK_UPSTREAM_BASE, GROK_OAUTH_BASE, GROK_OAUTH_CLIENT_ID, GROK_OAUTH_SCOPE,
+  GROK_BRIDGE_NO_BROWSER=1 (don't auto-open the login page in a browser),
   XAI_API_KEY (fallback: metered API instead of subscription OAuth)
 `;
 
