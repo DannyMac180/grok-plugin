@@ -13,7 +13,9 @@ export async function buildAuthHeaders(config) {
   if (token) {
     return {
       authorization: `Bearer ${token}`,
-      'x-xai-token-auth': `Bearer ${token}`,
+      // Do NOT send x-xai-token-auth: the upstream parses it as an auth-mode
+      // enum, and an unrecognized value voids the entire auth context (401
+      // "no auth context") even when the bearer token is valid.
       'x-grok-client-version': config.clientVersion,
       'x-grok-client-mode': config.clientMode,
       _mode: 'oauth'
