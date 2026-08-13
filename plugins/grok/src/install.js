@@ -92,7 +92,7 @@ export function installClaude(config) {
 export ANTHROPIC_BASE_URL="http://${config.host}:${config.port}"
 export ANTHROPIC_AUTH_TOKEN="grok-bridge-local"
 export ANTHROPIC_MODEL="${config.defaultModel}"
-export ANTHROPIC_SMALL_FAST_MODEL="${config.smallModel}"
+export ANTHROPIC_SMALL_FAST_MODEL="${config.defaultModel}"
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 exec claude "$@"
 `,

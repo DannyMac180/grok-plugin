@@ -126,7 +126,7 @@ r = await fetch('http://127.0.0.1:9918/openai/v1/responses', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({
-    model: 'grok-4.5',
+    model: 'grok-4.6',
     stream: true,
     instructions: 'Be terse.',
     input: [

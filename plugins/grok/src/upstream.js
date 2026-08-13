@@ -1,13 +1,11 @@
 import { getAccessToken } from './auth.js';
 
 // Maps incoming model ids to Grok subscription models. Claude Code sends
-// claude-* ids; Codex profiles may send anything. grok-* ids pass through.
+// claude-* ids; Codex profiles may send anything. grok-* ids pass through;
+// everything else runs on the one configured default model.
 export function mapModel(model, config) {
-  if (!model) return config.defaultModel;
-  const m = String(model);
-  if (m.startsWith('grok-')) return m;
-  if (/haiku|small|mini|nano/i.test(m)) return config.smallModel;
-  return config.defaultModel;
+  const m = String(model || '');
+  return m.startsWith('grok-') ? m : config.defaultModel;
 }
 
 export async function buildAuthHeaders(config) {

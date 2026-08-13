@@ -26,7 +26,7 @@ Advanced (Grok as the main model):
   grok-bridge print codex              Print the Codex config snippets without writing
 
 Environment overrides:
-  GROK_BRIDGE_PORT, GROK_BRIDGE_HOST, GROK_MODEL, GROK_SMALL_MODEL,
+  GROK_BRIDGE_PORT, GROK_BRIDGE_HOST, GROK_MODEL,
   GROK_UPSTREAM_BASE, GROK_OAUTH_BASE, GROK_OAUTH_CLIENT_ID, GROK_OAUTH_SCOPE,
   XAI_API_KEY (fallback: metered API instead of subscription OAuth)
 `;

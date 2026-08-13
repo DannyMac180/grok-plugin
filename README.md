@@ -84,8 +84,7 @@ Overridable via environment variables or `~/.grok-bridge/config.json`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `GROK_MODEL` | `grok-4.5` | model used for delegated tasks / main requests |
-| `GROK_SMALL_MODEL` | `grok-4.5` | model used for small/fast requests (proxy mode) |
+| `GROK_MODEL` | `grok-4.6` | model used for all tasks |
 | `GROK_UPSTREAM_BASE` | `https://cli-chat-proxy.grok.com/v1` | subscription upstream |
 | `GROK_OAUTH_BASE` | `https://auth.x.ai` | OAuth server |
 | `GROK_OAUTH_CLIENT_ID` | `grok-cli` | OAuth client id |

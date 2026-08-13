@@ -1,6 +1,6 @@
 {
   "name": "grok-bridge",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Use your SuperGrok / X Premium subscription (Grok OAuth) inside Claude Code and OpenAI Codex via a local translation proxy",
   "type": "module",
   "bin": {

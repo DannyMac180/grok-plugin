@@ -47,7 +47,7 @@ const TOOLS = [
         },
         model: {
           type: 'string',
-          description: 'Optional Grok model id override (e.g. grok-4.5).'
+          description: 'Optional Grok model id override (e.g. grok-4.6).'
         }
       },
       required: ['task']

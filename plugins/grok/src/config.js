@@ -18,8 +18,7 @@ const DEFAULTS = {
   apiBase: 'https://api.x.ai/v1',
 
   // Model routing: anything that isn't a grok-* model id is mapped to defaultModel.
-  defaultModel: 'grok-4.5',
-  smallModel: 'grok-4.5',
+  defaultModel: 'grok-4.6',
 
   // OAuth (RFC 8628 device flow). These constants may need updating if xAI
   // changes them — every one is overridable via env or ~/.grok-bridge/config.json.
@@ -53,7 +52,6 @@ export function loadConfig() {
     upstreamBase: env.GROK_UPSTREAM_BASE || fileCfg.upstreamBase || DEFAULTS.upstreamBase,
     apiBase: env.GROK_API_BASE || fileCfg.apiBase || DEFAULTS.apiBase,
     defaultModel: env.GROK_MODEL || fileCfg.defaultModel || DEFAULTS.defaultModel,
-    smallModel: env.GROK_SMALL_MODEL || fileCfg.smallModel || DEFAULTS.smallModel,
     authBase: env.GROK_OAUTH_BASE || fileCfg.authBase || DEFAULTS.authBase,
     clientId: env.GROK_OAUTH_CLIENT_ID || fileCfg.clientId || DEFAULTS.clientId,
     scope: env.GROK_OAUTH_SCOPE || fileCfg.scope || DEFAULTS.scope,
