@@ -1,6 +1,6 @@
 # grok-plugin
 
-Delegate tasks to **Grok** from inside **Claude Code** and **OpenAI Codex**, on your **Grok subscription** (SuperGrok or X Premium) — no metered xAI API key required.
+Delegate tasks to **Grok** from inside **Claude Code** and **Codex**, on your **Grok subscription** (SuperGrok or X Premium) — no metered xAI API key required.
 
 > **Go deeper:** I write [**Attention Heads**](https://attentionheads.substack.com/?utm_source=github&utm_medium=readme&utm_campaign=grok-plugin) — deep, evidence-backed writing on AI, cognition, and agentic engineering. The **Agentic Engineering Field Notes** series is where I publish practical advice on the craft of using AI. [Subscribe](https://attentionheads.substack.com/subscribe?utm_source=github&utm_medium=readme&utm_campaign=grok-plugin) to get new posts to your inbox.
 
