@@ -11,16 +11,30 @@ import {
 function normalizeTokens(raw) {
   if (!raw || typeof raw !== 'object') return null;
   // Some CLIs nest tokens under a key.
-  const candidate = raw.tokens || raw.credentials || raw.oauth || raw;
-  const accessToken =
+  let candidate = raw.tokens || raw.credentials || raw.oauth || raw;
+  let accessToken =
     candidate.access_token || candidate.accessToken || candidate.token || null;
-  if (!accessToken) return null;
+  if (!accessToken) {
+    // Official Grok CLI keys entries by "<issuer>::<uuid>" and stores the
+    // access token under `key` (plus refresh_token / expires_at / oidc_client_id).
+    const entry = Object.values(raw).find(
+      (v) =>
+        v &&
+        typeof v === 'object' &&
+        typeof v.key === 'string' &&
+        (v.refresh_token || v.expires_at)
+    );
+    if (!entry) return null;
+    candidate = entry;
+    accessToken = entry.key;
+  }
   const refreshToken = candidate.refresh_token || candidate.refreshToken || null;
   let expiresAt = candidate.expires_at || candidate.expiresAt || null;
   // Tolerate seconds vs. milliseconds epochs and ISO strings.
   if (typeof expiresAt === 'string') expiresAt = Date.parse(expiresAt) || null;
   if (typeof expiresAt === 'number' && expiresAt < 1e12) expiresAt *= 1000;
-  return { accessToken, refreshToken, expiresAt };
+  const clientId = candidate.oidc_client_id || null;
+  return { accessToken, refreshToken, expiresAt, clientId };
 }
 
 export function loadStoredTokens() {
@@ -83,7 +97,10 @@ export async function getAccessToken(config) {
     tokens.expiresAt && tokens.expiresAt - Date.now() < 5 * 60 * 1000;
   if (expiringSoon && tokens.refreshToken) {
     try {
-      const fresh = await refreshTokens(config, tokens.refreshToken);
+      const refreshConfig = tokens.clientId
+        ? { ...config, clientId: tokens.clientId }
+        : config;
+      const fresh = await refreshTokens(refreshConfig, tokens.refreshToken);
       return fresh.accessToken;
     } catch (err) {
       console.error(`[grok-bridge] ${err.message}; using existing token`);
