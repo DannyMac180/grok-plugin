@@ -10,6 +10,7 @@ import {
   codexProviderSnippet
 } from '../src/install.js';
 import { buildAuthHeaders } from '../src/upstream.js';
+import { runDoctor } from '../src/doctor.js';
 
 const HELP = `grok-bridge — use your Grok (SuperGrok / X Premium) subscription in Claude Code and Codex
 
@@ -17,6 +18,7 @@ Usage:
   grok-bridge login                    OAuth device-code login against auth.x.ai
   grok-bridge mcp                      Run the stdio MCP server (grok_delegate & co.)
   grok-bridge status                   Show auth + config status
+  grok-bridge doctor                   Diagnose config, auth, upstream, and install wiring
   grok-bridge install codex            Add the Grok MCP server to ~/.codex/config.toml
 
 Advanced (Grok as the main model):
@@ -76,6 +78,10 @@ async function main() {
       }
       break;
     }
+
+    case 'doctor':
+      process.exit(await runDoctor(config));
+      break;
 
     case 'install':
       if (arg === 'codex') installCodex(config);

@@ -11,7 +11,7 @@
   },
   "scripts": {
     "start": "node plugins/grok/bin/grok-bridge.js serve",
-    "test": "node test/smoke.test.mjs && node test/mcp.test.mjs"
+    "test": "node test/smoke.test.mjs && node test/mcp.test.mjs && node test/doctor.test.mjs"
   },
   "keywords": [
     "grok",

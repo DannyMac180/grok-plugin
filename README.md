@@ -69,6 +69,7 @@ One zero-dependency Node package (`grok-bridge`) provides the MCP server, the OA
 grok-bridge login                    OAuth device-code login (terminal alternative to in-chat login)
 grok-bridge mcp                      Run the stdio MCP server (what the plugin/Codex launch)
 grok-bridge status                   Show auth + config status
+grok-bridge doctor                   Diagnose config, auth, upstream, and install wiring
 grok-bridge install codex            Register the MCP server with Codex
 
 Advanced (Grok as the main model):

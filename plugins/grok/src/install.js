@@ -3,9 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { CONFIG_DIR, ensureConfigDir } from './config.js';
 
-const CODEX_CONFIG = path.join(os.homedir(), '.codex', 'config.toml');
-const MCP_MARKER = '# --- grok-bridge mcp (primary) ---';
-const PROVIDER_MARKER = '# --- grok-bridge provider (advanced) ---';
+export const CODEX_CONFIG = path.join(os.homedir(), '.codex', 'config.toml');
+export const MCP_MARKER = '# --- grok-bridge mcp (primary) ---';
+export const PROVIDER_MARKER = '# --- grok-bridge provider (advanced) ---';
 
 export function codexMcpSnippet() {
   return `${MCP_MARKER}
@@ -80,11 +80,13 @@ Next steps:
 `);
 }
 
+export const CLAUDE_LAUNCHER = path.join(CONFIG_DIR, 'bin', 'grok-claude');
+
 export function installClaude(config) {
   ensureConfigDir();
   const binDir = path.join(CONFIG_DIR, 'bin');
   fs.mkdirSync(binDir, { recursive: true });
-  const wrapper = path.join(binDir, 'grok-claude');
+  const wrapper = CLAUDE_LAUNCHER;
   fs.writeFileSync(
     wrapper,
     `#!/usr/bin/env bash
