@@ -23,6 +23,7 @@ import { CODEX_CONFIG, MCP_MARKER, PROVIDER_MARKER, CLAUDE_LAUNCHER } from './in
 const REACH_MS = 5000;
 const AUTH_PROBE_MS = 12000;
 const HEALTHZ_MS = 1000;
+const PORT_PROBE_MS = 3000;
 
 function home(p) {
   const h = os.homedir();
@@ -39,7 +40,15 @@ function httpUrl(s) {
 }
 
 function timedOut(err) {
-  return err.name === 'TimeoutError' || err.name === 'AbortError';
+  // undici sometimes wraps the timeout in err.cause (aborts often surface as
+  // a top-level `TypeError: fetch failed` with the real name on err.cause).
+  return (
+    err.name === 'TimeoutError' ||
+    err.name === 'AbortError' ||
+    err.cause?.name === 'TimeoutError' ||
+    err.cause?.name === 'AbortError' ||
+    err.cause?.code === 'UND_ERR_HEADERS_TIMEOUT'
+  );
 }
 
 // Builds a check result object. `bits` is an array of detail fragments
@@ -109,42 +118,65 @@ export function checkToken(config, tokens) {
     hint = hint || h;
   };
 
+  // Production getAccessToken() (auth.js) refreshes an expired token whenever
+  // a refreshToken + clientId are available. An expired-but-refreshable token
+  // is a working install, not a broken one — only report 'fail' when there is
+  // no refresh path.
+  const cid = tokens.clientId || config.clientId;
+  const refreshViable = Boolean(tokens.refreshToken && cid);
+  const expired = Boolean(tokens.expiresAt && tokens.expiresAt <= Date.now());
+
   if (!tokens.expiresAt) warn('expiry unknown', 'grok-bridge login  (store has no expiresAt)');
-  else if (tokens.expiresAt <= Date.now()) {
-    bits.push('EXPIRED');
-    status = 'fail';
-    hint = 'grok-bridge login  (token expired; refresh may be stale)';
+  else if (expired) {
+    if (refreshViable) {
+      warn(
+        'expired (refresh viable; doctor does not refresh)',
+        'a real request will auto-refresh it; run `grok-bridge login` to force it now'
+      );
+    } else {
+      bits.push('EXPIRED');
+      status = 'fail';
+      hint = 'grok-bridge login  (token expired; no refresh token/clientId to refresh with)';
+    }
   } else if (tokens.expiresAt - Date.now() < 5 * 60 * 1000) {
     warn('expiring soon', 'token expires within 5m; doctor will not refresh');
   } else bits.push('unexpired');
 
-  const cid = tokens.clientId || config.clientId;
   if (!tokens.refreshToken) {
     warn('no refresh token', 'grok-bridge login  (no refresh token; re-login required at expiry)');
   } else if (!cid) {
     warn('refresh token present, no clientId', 'set GROK_OAUTH_CLIENT_ID (needed to refresh)');
-  } else bits.push('refresh viable');
+  } else if (!expired) {
+    // Already noted inline above for the expired case; avoid repeating it.
+    bits.push('refresh viable');
+  }
 
   return result('token', status, bits, hint);
 }
 
-export async function checkUpstream(config) {
-  const url = config.upstreamBase;
+export async function checkUpstream(config, tokens) {
+  // Probe the base the auth path will actually use: oauth tokens go to
+  // upstreamBase, an API key (with no stored tokens) goes to apiBase.
+  const oauth = Boolean(tokens?.accessToken) || !config.apiKey;
+  const url = oauth ? config.upstreamBase : config.apiBase;
+  const envVar = oauth ? 'GROK_UPSTREAM_BASE' : 'GROK_API_BASE';
   try {
     const res = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(REACH_MS) });
     return result('upstream', 'ok', `GET ${url}  HTTP ${res.status} (reachable)`);
   } catch (err) {
     const why = timedOut(err) ? `timed out after ${REACH_MS}ms` : err.cause?.message || err.message;
-    return result('upstream', 'fail', `GET ${url}  ${why}`, 'check network / DNS / GROK_UPSTREAM_BASE');
+    return result('upstream', 'fail', `GET ${url}  ${why}`, `check network / DNS / ${envVar}`);
   }
 }
 
 // Rebuilds the exact production header set (see file header) from the
 // already-loaded config/tokens, without going through buildAuthHeaders() so
 // the doctor never triggers a token refresh (a disk write). Exported so the
-// test suite can assert this stays byte-for-byte identical to
-// buildAuthHeaders()'s real output (minus `_mode`) — drift here would mean
-// the probe passes/fails on headers the server doesn't actually send.
+// test suite can assert this stays aligned with buildAuthHeaders()'s real
+// output (minus `_mode`; content-type is added by callers like
+// chatCompletions, not by buildAuthHeaders itself, so it's excluded from the
+// comparison) — drift here would mean the probe passes/fails on headers the
+// server doesn't actually send.
 export function probeAuth(config, tokens) {
   if (tokens?.accessToken) {
     return {
@@ -172,6 +204,19 @@ export function probeAuth(config, tokens) {
 export async function checkAuthHeaders(config, tokens) {
   const probe = probeAuth(config, tokens);
   if (!probe) return result('auth-headers', 'skip', 'skipped (not authenticated)', 'grok-bridge login');
+  if (tokens?.accessToken && tokens.expiresAt && tokens.expiresAt <= Date.now()) {
+    // checkToken already flagged this (fail if unrecoverable, warn if
+    // refresh-viable) — probing a known-dead token proves nothing but still
+    // spends a quota completion, so skip regardless of which it was.
+    const cid = tokens.clientId || config.clientId;
+    const refreshViable = Boolean(tokens.refreshToken && cid);
+    return result(
+      'auth-headers',
+      'skip',
+      `skipped (token expired${refreshViable ? '; refresh viable, doctor does not refresh' : ''}; probe would spend quota on a known 401)`,
+      refreshViable ? 'a real request will auto-refresh it; run `grok-bridge login` to force it now' : 'grok-bridge login'
+    );
+  }
 
   const url = `${String(probe.base).replace(/\/$/, '')}/chat/completions`;
   try {
@@ -193,7 +238,7 @@ export async function checkAuthHeaders(config, tokens) {
         'auth-headers',
         'fail',
         'header-level rejection (HTTP 401, reason=no auth context)',
-        'drop x-xai-token-auth; request headers must match buildAuthHeaders()'
+        'upstream rejected the header shape; ensure x-xai-token-auth is never sent and probeAuth() matches buildAuthHeaders()'
       );
     }
     if (res.status === 401 || res.status === 403) {
@@ -245,9 +290,27 @@ export function checkInstall() {
 function probeListen(host, port) {
   return new Promise((resolve) => {
     const srv = net.createServer();
-    srv.unref();
-    srv.once('error', (err) => resolve(err.code || 'error'));
-    srv.listen(port, host, () => srv.close(() => resolve('free')));
+    // Keep the handle referenced until the probe resolves — an early unref()
+    // let the process exit mid-DNS-lookup for a bad GROK_BRIDGE_HOST.
+    // A bad GROK_BRIDGE_HOST hostname can stall in DNS; never hang the doctor.
+    const timer = setTimeout(() => {
+      srv.close();
+      resolve('timed out');
+    }, PORT_PROBE_MS);
+    timer.unref();
+    const done = (v) => {
+      clearTimeout(timer);
+      resolve(v);
+    };
+    srv.once('error', (err) => done(err.code || 'error'));
+    try {
+      srv.listen(port, host, () => srv.close(() => done('free')));
+    } catch (err) {
+      // net throws SYNCHRONOUSLY for some bad inputs (e.g. NaN/out-of-range
+      // ports -> ERR_SOCKET_BAD_PORT) instead of emitting 'error'.
+      clearTimeout(timer);
+      resolve(err.code || err.message || 'error');
+    }
   });
 }
 
@@ -260,8 +323,9 @@ export async function checkPort(config) {
   }
   const busyFail = (detail) =>
     result('port', 'fail', detail, 'stop the other listener or set GROK_BRIDGE_PORT to a free port');
+  const hostUrl = host.includes(':') ? `[${host}]` : host; // IPv6 literal
   try {
-    const res = await fetch(`http://${host}:${port}/healthz`, {
+    const res = await fetch(`http://${hostUrl}:${port}/healthz`, {
       method: 'GET',
       signal: AbortSignal.timeout(HEALTHZ_MS)
     });
@@ -295,7 +359,7 @@ export async function runDoctor(config) {
     const results = [
       checkConfig(config),
       checkToken(config, tokens),
-      await checkUpstream(config),
+      await checkUpstream(config, tokens),
       await checkAuthHeaders(config, tokens),
       checkInstall(),
       await checkPort(config)

@@ -63,11 +63,42 @@ const { _mode, ...prodSendHeaders } = prodHeaders;
 // the auth-relevant headers only — that's the set that can silently drift.
 const { 'content-type': _ct, ...probeAuthHeaders } = probeHeaders;
 
+// Key-order-insensitive deep equality (JSON.stringify comparison would pass
+// or fail on insertion order, which is not what drift means).
+const sameHeaders = (a, b) => {
+  const ka = Object.keys(a).sort();
+  const kb = Object.keys(b).sort();
+  return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a[k] === b[k]);
+};
+
 check('probeAuth base matches upstreamBase', probeAuth(fakeConfig, tokens).base === fakeConfig.upstreamBase);
 check(
   'probeAuth headers equal buildAuthHeaders() minus _mode',
-  JSON.stringify(probeAuthHeaders) === JSON.stringify(prodSendHeaders)
+  sameHeaders(probeAuthHeaders, prodSendHeaders)
 );
+// The invariant behind the original production 401, asserted directly: the
+// upstream parses x-xai-token-auth as an auth-mode enum and an unknown value
+// voids the auth context. Equality alone would pass if BOTH functions
+// re-added the header — pin its absence on each side independently.
+check('probeAuth never sends x-xai-token-auth', !('x-xai-token-auth' in probeHeaders));
+check('buildAuthHeaders never sends x-xai-token-auth', !('x-xai-token-auth' in prodHeaders));
+
+// API-key path: same drift pin for the metered route (no stored tokens).
+// buildAuthHeaders() reads the token store from disk, so move the fixture
+// aside for this comparison — the API-key branch only fires with no tokens.
+const keyConfig = { ...fakeConfig, apiKey: 'FAKE_API_KEY_DO_NOT_LOG' };
+const authPath = path.join(dir, 'auth.json');
+fs.renameSync(authPath, authPath + '.aside');
+const keyProbe = probeAuth(keyConfig, null);
+const { _mode: _km, ...keyProd } = await buildAuthHeaders({ ...keyConfig });
+fs.renameSync(authPath + '.aside', authPath);
+const { 'content-type': _kct, ...keyProbeHeaders } = keyProbe.headers;
+check('API-key probeAuth base matches apiBase', keyProbe.base === keyConfig.apiBase);
+check(
+  'API-key probeAuth headers equal buildAuthHeaders() minus _mode',
+  sameHeaders(keyProbeHeaders, keyProd)
+);
+check('API-key probeAuth never sends x-xai-token-auth', !('x-xai-token-auth' in keyProbe.headers));
 
 // --- (b) exit-code contract: runDoctor's aggregation logic ------------------
 // runDoctor itself does live I/O; test the pure mapping it applies to a
